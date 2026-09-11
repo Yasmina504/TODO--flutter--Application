@@ -1,0 +1,65 @@
+name: nti
+description: A new Flutter project.
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=2.19.6 <3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.2
+  flutter_svg: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - lib/assets/images/Group 1000002807.png
+    - lib/assets/images/OBJECTS012.svg
+    - lib/assets/images/GettyImages-1315607788 3.png
+    - lib/assets/images/Password - Iconly Pro.svg
+    - lib/assets/images/55024598_9264826 1.svg
+    - lib/assets/images/Lock - Iconly Pro.png
+    - lib/assets/images/Setting - Iconly Pro.png
+    - lib/assets/images/Profile - Iconly Pro.svg
+
+  fonts:
+    - family: LexendDeca
+      fonts:
+        - asset: lib/assets/fonts/LexendDeca-Black.ttf
+          weight: 900
+
+        - asset: lib/assets/fonts/LexendDeca-Bold.ttf
+          weight: 700
+
+        - asset: lib/assets/fonts/LexendDeca-ExtraBold.ttf
+          weight: 800
+
+        - asset: lib/assets/fonts/LexendDeca-ExtraLight.ttf
+          weight: 200
+
+        - asset: lib/assets/fonts/LexendDeca-Light.ttf
+          weight: 300
+
+        - asset: lib/assets/fonts/LexendDeca-Medium.ttf
+          weight: 500
+
+        - asset: lib/assets/fonts/LexendDeca-Regular.ttf
+          weight: 400
+
+        - asset: lib/assets/fonts/LexendDeca-SemiBold.ttf
+          weight: 600
+
+        - asset: lib/assets/fonts/LexendDeca-Thin.ttf
+          weight: 100
