@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../repo/user_repo.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -11,10 +12,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController oldPasswordController = TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
+  final UserRepo _userRepo = UserRepo();
 
   bool obscureOldPassword = true;
   bool obscureNewPassword = true;
   bool obscureConfirmPassword = true;
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -24,28 +27,60 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     super.dispose();
   }
 
-  void savePassword() {
-    if (oldPasswordController.text.trim().isEmpty ||
-        newPasswordController.text.trim().isEmpty ||
-        confirmPasswordController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all password fields'),
-        ),
-      );
+  Future<void> savePassword() async {
+    // 1. التحقق من الحقول
+    if (oldPasswordController.text.trim().isEmpty) {
+      _showError('Please enter your current password');
       return;
     }
-
+    if (newPasswordController.text.trim().isEmpty) {
+      _showError('Please enter your new password');
+      return;
+    }
+    if (confirmPasswordController.text.trim().isEmpty) {
+      _showError('Please confirm your new password');
+      return;
+    }
     if (newPasswordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('New password and confirm password do not match'),
-        ),
-      );
+      _showError('New passwords do not match');
       return;
     }
 
-    Navigator.pop(context);
+    // 2. نداء الـ API
+    setState(() => isLoading = true);
+
+    final result = await _userRepo.changePassword(
+      currentPassword: oldPasswordController.text,
+      newPassword: newPasswordController.text,
+      newPasswordConfirm: confirmPasswordController.text,
+    );
+
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    if (result['success'] == true) {
+      // ✅ نجح
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      // ❌ فشل
+      _showError(result['message']);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -53,97 +88,108 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
       body: SafeArea(
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+                child: Image.asset(
+                  'lib/assets/images/GettyImages-1315607788 3.png',
+                  width: double.infinity,
+                  height: 294,
+                  fit: BoxFit.cover,
+                ),
               ),
-              child: Image.asset(
-                'lib/assets/images/GettyImages-1315607788 3.png',
-                width: double.infinity,
-                height: 294,
-                fit: BoxFit.cover,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 23),
-                  _buildPasswordField(
-                    controller: oldPasswordController,
-                    hintText: 'Old Password',
-                    obscureText: obscureOldPassword,
-                    onToggle: () {
-                      setState(() {
-                        obscureOldPassword = !obscureOldPassword;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 11),
-                  _buildPasswordField(
-                    controller: newPasswordController,
-                    hintText: 'New Password',
-                    obscureText: obscureNewPassword,
-                    onToggle: () {
-                      setState(() {
-                        obscureNewPassword = !obscureNewPassword;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 11),
-                  _buildPasswordField(
-                    controller: confirmPasswordController,
-                    hintText: 'Confirm Password',
-                    obscureText: obscureConfirmPassword,
-                    onToggle: () {
-                      setState(() {
-                        obscureConfirmPassword = !obscureConfirmPassword;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 23),
-                  Container(
-                    width: double.infinity,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(13),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0xFF149954),
-                          offset: Offset(0, 5),
-                          blurRadius: 10,
-                          spreadRadius: 0,
-                        ),
-                      ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 23),
+                    _buildPasswordField(
+                      controller: oldPasswordController,
+                      hintText: 'Old Password',
+                      obscureText: obscureOldPassword,
+                      onToggle: () {
+                        setState(() {
+                          obscureOldPassword = !obscureOldPassword;
+                        });
+                      },
                     ),
-                    child: ElevatedButton(
-                      onPressed: savePassword,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF119B52),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        padding: EdgeInsets.zero,
+                    const SizedBox(height: 11),
+                    _buildPasswordField(
+                      controller: newPasswordController,
+                      hintText: 'New Password',
+                      obscureText: obscureNewPassword,
+                      onToggle: () {
+                        setState(() {
+                          obscureNewPassword = !obscureNewPassword;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 11),
+                    _buildPasswordField(
+                      controller: confirmPasswordController,
+                      hintText: 'Confirm Password',
+                      obscureText: obscureConfirmPassword,
+                      onToggle: () {
+                        setState(() {
+                          obscureConfirmPassword = !obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 23),
+                    Container(
+                      width: double.infinity,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0xFF149954),
+                            offset: Offset(0, 5),
+                            blurRadius: 10,
+                            spreadRadius: 0,
+                          ),
+                        ],
                       ),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          fontFamily: 'LexendDeca',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w400,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : savePassword,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF119B52),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          padding: EdgeInsets.zero,
                         ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Save',
+                                style: TextStyle(
+                                  fontFamily: 'LexendDeca',
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

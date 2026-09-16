@@ -1,5 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/user_service.dart';
+import 'home_screen1.dart';
 import 'lets_start_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,13 +14,34 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    final isLoggedIn = await UserService.isLoggedIn();
+    final username = await UserService.getUsername();
+
+    if (!mounted) return;
+
+    if (isLoggedIn && username != null && username.isNotEmpty) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const LetsStartScreen()),
+        MaterialPageRoute(
+          builder: (context) => HomeScreen1(username: username),
+        ),
       );
-    });
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const LetsStartScreen(),
+        ),
+      );
+    }
   }
 
   @override

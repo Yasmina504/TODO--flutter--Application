@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'services/api_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
+  ApiService.setupInterceptor();
   runApp(const MyApp());
 }
 

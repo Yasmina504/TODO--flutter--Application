@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/task_data.dart';
+import '../repo/task_repo.dart';
 import '../widgets/group_icon.dart';
-import 'edit_task_screen.dart';
 
 class AddTaskScreen extends StatefulWidget {
   const AddTaskScreen({super.key});
@@ -13,9 +16,14 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TaskRepo _taskRepo = TaskRepo();
+
   String? selectedGroup;
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
+  XFile? image;
+
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -48,9 +56,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   String get formattedDate {
-    if (selectedDate == null) {
-      return 'End Time';
-    }
+    if (selectedDate == null) return 'No Date';
     final day = selectedDate!.day.toString().padLeft(2, '0');
     final month = selectedDate!.month.toString().padLeft(2, '0');
     final year = selectedDate!.year.toString();
@@ -58,47 +64,71 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   String get formattedTime {
-    if (selectedTime == null) {
-      return '';
-    }
+    if (selectedTime == null) return 'No Time';
     final hour = selectedTime!.hourOfPeriod == 0 ? 12 : selectedTime!.hourOfPeriod;
     final minute = selectedTime!.minute.toString().padLeft(2, '0');
     final period = selectedTime!.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
   }
 
+  // ============================================
+  // POST /new_task
+  // ============================================
   Future<void> addTask() async {
-    if (titleController.text.trim().isEmpty || descriptionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter title and description'),
-        ),
-      );
+    // 1. التحقق
+    if (titleController.text.trim().isEmpty) {
+      _showError('Please enter task title');
+      return;
+    }
+    if (descriptionController.text.trim().isEmpty) {
+      _showError('Please enter task description');
       return;
     }
 
-    final TaskData newTask = TaskData(
+    // 2. نداء الـ API
+    setState(() => isLoading = true);
+
+    final result = await _taskRepo.newTask(
       title: titleController.text.trim(),
       description: descriptionController.text.trim(),
-      date: selectedDate != null ? formattedDate : 'No Date',
-      time: selectedTime != null ? formattedTime : 'No Time',
-      group: selectedGroup ?? 'Home',
-    );
-
-    final TaskData? updatedTask = await Navigator.push<TaskData>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditTaskScreen(
-          task: newTask,
-        ),
-      ),
     );
 
     if (!mounted) return;
+    setState(() => isLoading = false);
 
-    if (updatedTask != null) {
-      Navigator.pop(context, updatedTask);
+    if (result['success'] == true) {
+      // ✅ إنشاء TaskData جديدة عشان نرجعها
+      final newTask = TaskData(
+        title: titleController.text.trim(),
+        description: descriptionController.text.trim(),
+        date: formattedDate,
+        time: formattedTime,
+        group: selectedGroup ?? 'Home',
+        imagePath: image?.path,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // ✅ نرجع المهمة الجديدة
+      Navigator.pop(context, newTask);
+    } else {
+      _showError(result['message']);
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -115,15 +145,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 Row(
                   children: [
                     IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+                      onPressed: () => Navigator.pop(context),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      icon: const Icon(
-                        Icons.chevron_left,
-                        size: 28,
-                      ),
+                      icon: const Icon(Icons.chevron_left, size: 28),
                     ),
                     const Expanded(
                       child: Text(
@@ -139,16 +164,66 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   ],
                 ),
                 const SizedBox(height: 42),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(19),
-                  child: Image.asset(
-                    'lib/assets/images/GettyImages-1315607788 3.png',
-                    width: 253,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
+
+                // ✅ صورة
+                Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(19),
+                      child: image != null
+                          ? kIsWeb
+                              ? Image.network(
+                                  image!.path,
+                                  width: 253,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.file(
+                                  File(image!.path),
+                                  width: 253,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                )
+                          : Image.asset(
+                              'lib/assets/images/GettyImages-1315607788 3.png',
+                              width: 253,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final picker = ImagePicker();
+                          final pickedFile =
+                              await picker.pickImage(source: ImageSource.gallery);
+                          if (pickedFile != null) {
+                            setState(() => image = pickedFile);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black.withOpacity(0.2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text(
+                          'Pick Image',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+
                 const SizedBox(height: 29),
+
                 _buildTextField(
                   controller: titleController,
                   hintText: 'Title',
@@ -163,11 +238,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 const SizedBox(height: 16),
                 _buildDateField(),
                 const SizedBox(height: 16),
+
+                // ✅ زر الإضافة
                 SizedBox(
                   width: double.infinity,
                   height: 49,
                   child: ElevatedButton(
-                    onPressed: addTask,
+                    onPressed: isLoading ? null : addTask,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF119B52),
                       foregroundColor: Colors.white,
@@ -177,12 +254,19 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         borderRadius: BorderRadius.circular(13),
                       ),
                     ),
-                    child: const Text(
-                      'Add Task',
-                      style: TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Add Task',
+                            style: TextStyle(fontSize: 16),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -205,24 +289,17 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         textAlignVertical: TextAlignVertical.center,
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF9996A3),
-          ),
+          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9996A3)),
           filled: true,
           fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(horizontal: 15),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(
-              color: Color(0xFFD0D0D0),
-            ),
+            borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(
-              color: Color(0xFF119B52),
-            ),
+            borderSide: const BorderSide(color: Color(0xFF119B52)),
           ),
         ),
       ),
@@ -236,9 +313,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFFD0D0D0),
-        ),
+        border: Border.all(color: const Color(0xFFD0D0D0)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -246,15 +321,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           isExpanded: true,
           hint: const Text(
             'Group',
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF9996A3),
-            ),
+            style: TextStyle(fontSize: 13, color: Color(0xFF9996A3)),
           ),
-          icon: const Icon(
-            Icons.keyboard_arrow_down,
-            color: Colors.black,
-          ),
+          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
           items: [
             DropdownMenuItem(
               value: 'Home',
@@ -299,11 +368,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ),
             ),
           ],
-          onChanged: (value) {
-            setState(() {
-              selectedGroup = value;
-            });
-          },
+          onChanged: (value) => setState(() => selectedGroup = value),
         ),
       ),
     );
@@ -318,26 +383,15 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: const Color(0xFFD0D0D0),
-          ),
+          border: Border.all(color: const Color(0xFFD0D0D0)),
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.calendar_month,
-              color: Color(0xFF119B52),
-              size: 21,
-            ),
+            const Icon(Icons.calendar_month, color: Color(0xFF119B52), size: 21),
             const SizedBox(width: 18),
             Text(
-              selectedDate == null
-                  ? 'End Time'
-                  : '$formattedDate $formattedTime',
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF9996A3),
-              ),
+              selectedDate == null ? 'End Time' : '$formattedDate $formattedTime',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF9996A3)),
             ),
           ],
         ),

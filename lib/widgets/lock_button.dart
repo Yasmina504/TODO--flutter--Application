@@ -17,7 +17,7 @@ class LockButton extends StatelessWidget {
       padding: EdgeInsets.zero,
       splashRadius: 20,
       icon: Icon(
-        isLocked ? Icons.lock_open_outlined : Icons.lock_outline,
+        isLocked ? Icons.lock_outline : Icons.lock_open_outlined,
         color: Colors.black,
         size: 20,
       ),

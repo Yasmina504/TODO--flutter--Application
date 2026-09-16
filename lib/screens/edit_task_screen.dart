@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/task_data.dart';
+import '../repo/task_repo.dart';
 import 'done_task_screen.dart';
 
 class EditTaskScreen extends StatefulWidget {
@@ -22,15 +23,27 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   late String selectedDate;
   late String selectedTime;
 
+  final TaskRepo _taskRepo = TaskRepo();
+  bool isLoading = false;
+
+  // ✅ مهمة من الـ API بس لو id بين 1 و 999
+  // المهام الجديدة بتاخد id من 1000
+  // المهام الأساسية بتاخد id سالب
+  bool get _isApiTask =>
+      widget.task.id != null &&
+      widget.task.id! > 0 &&
+      widget.task.id! < 1000;
+
   @override
   void initState() {
     super.initState();
     titleController = TextEditingController(text: widget.task.title);
-    descriptionController = TextEditingController(text: widget.task.description);
+    descriptionController =
+        TextEditingController(text: widget.task.description);
     selectedGroup = widget.task.group;
     selectedStatus = widget.task.status;
-    selectedDate = widget.task.date;
-    selectedTime = widget.task.time;
+    selectedDate = widget.task.date.isEmpty ? 'No Date' : widget.task.date;
+    selectedTime = widget.task.time.isEmpty ? 'No Time' : widget.task.time;
   }
 
   @override
@@ -40,33 +53,161 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     super.dispose();
   }
 
-  void updateTask() {
-    if (titleController.text.trim().isEmpty || descriptionController.text.trim().isEmpty) {
+  // ============================================
+  // Update Task
+  // PUT /tasks/{id}
+  // ============================================
+  Future<void> updateTask() async {
+    // 1. التحقق من الحقول
+    if (titleController.text.trim().isEmpty ||
+        descriptionController.text.trim().isEmpty) {
+      _showError('Please fill all fields');
       return;
     }
 
-    final TaskData updatedTask = TaskData(
+    // ✅ مهمة محلية (id سالب أو أكبر من 1000)
+    if (!_isApiTask) {
+      final updatedTask = TaskData(
+        id: widget.task.id,
+        title: titleController.text.trim(),
+        description: descriptionController.text.trim(),
+        date: selectedDate,
+        time: selectedTime,
+        group: selectedGroup,
+        status: selectedStatus,
+        imagePath: widget.task.imagePath,
+      );
+
+      // ✅ SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task updated successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.pop(context, updatedTask);
+      return;
+    }
+
+    // ✅ مهمة API
+    setState(() => isLoading = true);
+
+    final result = await _taskRepo.updateTask(
+      id: widget.task.id!,
       title: titleController.text.trim(),
       description: descriptionController.text.trim(),
-      date: selectedDate,
-      time: selectedTime,
-      group: selectedGroup,
-      status: selectedStatus,
     );
 
-    Navigator.pop(context, updatedTask);
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    if (result['success'] == true) {
+      // ✅ SnackBar من الـ API
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']), // "Task updated successfully"
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      final updatedTask = TaskData(
+        id: widget.task.id,
+        title: titleController.text.trim(),
+        description: descriptionController.text.trim(),
+        date: selectedDate,
+        time: selectedTime,
+        group: selectedGroup,
+        status: selectedStatus,
+        imagePath: widget.task.imagePath,
+      );
+
+      Navigator.pop(context, updatedTask);
+    } else {
+      _showError(result['message']);
+    }
   }
 
-  void deleteTask() {
-    Navigator.pop(context, null);
-  }
+  // ============================================
+  // Delete Task
+  // DELETE /tasks/{id}
+  // ============================================
+  Future<void> deleteTask() async {
+    // 1. Dialog تأكيد
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Task'),
+        content: const Text('Are you sure you want to delete this task?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
 
-  void markAsDone() {
-    if (titleController.text.trim().isEmpty || descriptionController.text.trim().isEmpty) {
+    if (confirmed != true) return;
+
+    // ✅ مهمة محلية (id سالب أو أكبر من 1000)
+    if (!_isApiTask) {
+      // ✅ SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task deleted successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.pop(context, null);
       return;
     }
 
-    final TaskData doneTask = TaskData(
+    // ✅ مهمة API
+    setState(() => isLoading = true);
+
+    final result = await _taskRepo.deleteTask(id: widget.task.id!);
+
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    if (result['success'] == true) {
+      // ✅ SnackBar من الـ API
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']), // "Task deleted successfully"
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      Navigator.pop(context, null);
+    } else {
+      _showError(result['message']);
+    }
+  }
+
+  // ============================================
+  // Mark as Done
+  // ============================================
+  void markAsDone() {
+    if (titleController.text.trim().isEmpty ||
+        descriptionController.text.trim().isEmpty) {
+      return;
+    }
+
+    final doneTask = TaskData(
+      id: widget.task.id,
       title: titleController.text.trim(),
       description: descriptionController.text.trim(),
       date: selectedDate,
@@ -81,6 +222,16 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         builder: (context) => DoneTaskScreen(
           task: doneTask,
         ),
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -144,6 +295,8 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 16),
+
+                // ============ Header ============
                 Row(
                   children: [
                     IconButton(
@@ -170,7 +323,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: deleteTask,
+                      onTap: isLoading ? null : deleteTask,
                       child: Container(
                         height: 31,
                         padding: const EdgeInsets.symmetric(horizontal: 11),
@@ -200,7 +353,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 22),
+
+                // ============ Status + Avatar ============
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -256,7 +412,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 17),
+
+                // ============ Group ============
                 GestureDetector(
                   onTap: _showGroupPicker,
                   child: Container(
@@ -289,7 +448,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
+
+                // ============ Title ============
                 Container(
                   width: double.infinity,
                   height: 54,
@@ -315,11 +477,17 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
+
+                // ============ Description ============
                 Container(
                   width: double.infinity,
                   height: 125,
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 11,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
@@ -339,7 +507,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
+
+                // ============ Date + Time ============
                 GestureDetector(
                   onTap: pickEditDateAndTime,
                   child: Container(
@@ -377,12 +548,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 68),
+
+                // ============ Mark as Done ============
                 SizedBox(
                   width: double.infinity,
                   height: 44,
                   child: ElevatedButton(
-                    onPressed: markAsDone,
+                    onPressed: isLoading ? null : markAsDone,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF119B52),
                       foregroundColor: Colors.white,
@@ -401,12 +575,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 17),
+
+                // ============ Update ============
                 SizedBox(
                   width: double.infinity,
                   height: 44,
                   child: OutlinedButton(
-                    onPressed: updateTask,
+                    onPressed: isLoading ? null : updateTask,
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       foregroundColor: const Color(0xFF119B52),
@@ -418,15 +595,25 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Update',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF119B52),
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Update',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                   ),
                 ),
+
                 const SizedBox(height: 30),
               ],
             ),
