@@ -24,7 +24,6 @@ class _HomeScreen1State extends State<HomeScreen1> {
     _currentUsername = widget.username;
   }
 
-  // ✅ فتح ProfileScreen وانتظار الاسم الجديد
   Future<void> _openProfile() async {
     final newUsername = await Navigator.push<String>(
       context,
@@ -35,7 +34,6 @@ class _HomeScreen1State extends State<HomeScreen1> {
       ),
     );
 
-    // ✅ لو رجع اسم جديد، حدّثه
     if (newUsername != null && newUsername.isNotEmpty) {
       setState(() {
         _currentUsername = newUsername;
@@ -43,7 +41,7 @@ class _HomeScreen1State extends State<HomeScreen1> {
     }
   }
 
-  // ✅ فتح HomeScreen2 مع تمرير الاسم
+ 
   void _openTasks() {
     Navigator.push(
       context,
@@ -64,7 +62,7 @@ class _HomeScreen1State extends State<HomeScreen1> {
       body: SafeArea(
         child: Stack(
           children: [
-            // ============ Header (Avatar + Username) ============
+       
             Positioned(
               top: size.height * 0.025,
               left: size.width * 0.05,
@@ -107,7 +105,7 @@ class _HomeScreen1State extends State<HomeScreen1> {
               ),
             ),
 
-            // ============ Empty State Message ============
+        
             Positioned(
               top: size.height * 0.40,
               left: size.width * 0.05,
@@ -144,7 +142,7 @@ class _HomeScreen1State extends State<HomeScreen1> {
               ),
             ),
 
-            // ============ Illustration ============
+      
             Positioned(
               top: size.height * 0.54,
               left: size.width * 0.05,
@@ -161,7 +159,7 @@ class _HomeScreen1State extends State<HomeScreen1> {
               ),
             ),
 
-            // ============ Floating Button ============
+           
             Positioned(
               right: size.width * 0.06,
               bottom: size.height * 0.025,

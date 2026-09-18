@@ -3,10 +3,7 @@ import '../models/task_data.dart';
 import '../services/api_service.dart';
 
 class TaskRepo {
-  // ============================================
-  // 1. New Task
-  // POST /new_task
-  // ============================================
+
   Future<Map<String, dynamic>> newTask({
     required String title,
     required String description,
@@ -41,10 +38,7 @@ class TaskRepo {
     }
   }
 
-  // ============================================
-  // 2. Update Task
-  // PUT /tasks/{id}
-  // ============================================
+
   Future<Map<String, dynamic>> updateTask({
     required int id,
     required String title,
@@ -78,10 +72,6 @@ class TaskRepo {
     }
   }
 
-  // ============================================
-  // 3. Get My Tasks
-  // GET /my_tasks
-  // ============================================
   Future<Map<String, dynamic>> getMyTasks() async {
     try {
       final response = await ApiService.dio.get('my_tasks');
@@ -110,10 +100,7 @@ class TaskRepo {
     }
   }
 
-  // ============================================
-  // 4. Delete Task
-  // DELETE /tasks/{id}
-  // ============================================
+
   Future<Map<String, dynamic>> deleteTask({
     required int id,
   }) async {
@@ -139,9 +126,7 @@ class TaskRepo {
     }
   }
 
-  // ============================================
-  // Error Handler
-  // ============================================
+ 
   String _handleError(DioError e) {
     if (e.response != null && e.response?.data != null) {
       final data = e.response?.data;

@@ -71,11 +71,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     return '$hour:$minute $period';
   }
 
-  // ============================================
-  // POST /new_task
-  // ============================================
+  
   Future<void> addTask() async {
-    // 1. التحقق
+
     if (titleController.text.trim().isEmpty) {
       _showError('Please enter task title');
       return;
@@ -85,7 +83,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       return;
     }
 
-    // 2. نداء الـ API
+   
     setState(() => isLoading = true);
 
     final result = await _taskRepo.newTask(
@@ -114,7 +112,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         ),
       );
 
-      // ✅ نرجع المهمة الجديدة
       Navigator.pop(context, newTask);
     } else {
       _showError(result['message']);
@@ -165,7 +162,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 ),
                 const SizedBox(height: 42),
 
-                // ✅ صورة
                 Stack(
                   alignment: Alignment.bottomCenter,
                   children: [
@@ -239,7 +235,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 _buildDateField(),
                 const SizedBox(height: 16),
 
-                // ✅ زر الإضافة
                 SizedBox(
                   width: double.infinity,
                   height: 49,

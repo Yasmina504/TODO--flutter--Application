@@ -28,7 +28,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   Future<void> savePassword() async {
-    // 1. التحقق من الحقول
+  
     if (oldPasswordController.text.trim().isEmpty) {
       _showError('Please enter your current password');
       return;
@@ -46,7 +46,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       return;
     }
 
-    // 2. نداء الـ API
+  
     setState(() => isLoading = true);
 
     final result = await _userRepo.changePassword(
@@ -59,7 +59,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     setState(() => isLoading = false);
 
     if (result['success'] == true) {
-      // ✅ نجح
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -68,7 +68,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       );
       Navigator.pop(context);
     } else {
-      // ❌ فشل
+      
       _showError(result['message']);
     }
   }

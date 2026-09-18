@@ -27,7 +27,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
   final TaskRepo _taskRepo = TaskRepo();
   late String _currentUsername;
 
-  // ✅ 5 Tasks الأساسية
+
   final List<TaskData> _defaultTasks = [
     TaskData(
       id: -1,
@@ -71,13 +71,13 @@ class _HomeScreen2State extends State<HomeScreen2> {
     ),
   ];
 
-  // ✅ المهام من الـ API
+
   List<TaskData> _apiTasks = [];
 
-  // ✅ كل المهام
+
   List<TaskData> get tasks => [..._apiTasks, ..._defaultTasks];
 
-  // ✅ مؤشر خفيف (مش هيأثر على الشاشة)
+ 
   bool isLoading = false;
 
   int _localTaskIdCounter = 1000;
@@ -87,13 +87,10 @@ class _HomeScreen2State extends State<HomeScreen2> {
     super.initState();
     _currentUsername = widget.username;
     
-    // ✅ نحمّل في الخلفية من غير Loading
     _loadTasksInBackground();
   }
 
-  // ============================================
-  // ✅ تحميل في الخلفية (من غير Loading)
-  // ============================================
+
   Future<void> _loadTasksInBackground() async {
     final result = await _taskRepo.getMyTasks();
 
@@ -117,14 +114,12 @@ class _HomeScreen2State extends State<HomeScreen2> {
     }
   }
 
-  // ============================================
-  // ✅ Refresh (لما المستخدم يعمل Pull)
-  // ============================================
+
   Future<void> _refreshTasks() async {
     await _loadTasksInBackground();
   }
 
-  // ✅ فتح ProfileScreen
+ 
   Future<void> _openProfile() async {
     final newUsername = await Navigator.push<String>(
       context,
@@ -138,9 +133,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
     }
   }
 
-  // ============================================
-  // ✅ إضافة مهمة جديدة
-  // ============================================
   Future<void> _addNewTask() async {
     final newTask = await Navigator.push<TaskData>(
       context,
@@ -156,9 +148,7 @@ class _HomeScreen2State extends State<HomeScreen2> {
     }
   }
 
-  // ============================================
-  // ✅ تعديل مهمة
-  // ============================================
+
   Future<void> _openEditTask(TaskData task) async {
     final result = await Navigator.push(
       context,
@@ -277,8 +267,6 @@ class _HomeScreen2State extends State<HomeScreen2> {
                 ),
                 SizedBox(height: size.height * 0.025),
 
-                // ✅ التعديل: نعرض دايماً القائمة (5 الأساسية + اللي موجود)
-                // مفيش Loading خالص
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: _refreshTasks,

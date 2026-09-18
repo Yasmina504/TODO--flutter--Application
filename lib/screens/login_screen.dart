@@ -1,76 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../repo/auth_repo.dart';
+import '../cubit/login/login_cubit.dart';
+import '../cubit/login/login_state.dart';
 import '../widgets/lock_button.dart';
 import 'home_screen1.dart';
 import 'register_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController usernameController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final AuthRepo _authRepo = AuthRepo();
-
-  bool obscurePassword = true;
-  bool isLoading = false;
-
-  @override
-  void dispose() {
-    usernameController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _login() async {
-    if (usernameController.text.trim().isEmpty) {
-      _showError('Please enter your username');
-      return;
-    }
-    if (passwordController.text.trim().isEmpty) {
-      _showError('Please enter your password');
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    final result = await _authRepo.login(
-      username: usernameController.text.trim(),
-      password: passwordController.text,
-    );
-
-    setState(() => isLoading = false);
-
-    if (!mounted) return;
-
-    if (result['success'] == true) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomeScreen1(
-            username: result['user'].username,
-          ),
-        ),
-      );
-    } else {
-      _showError(result['message']);
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,143 +16,187 @@ class _LoginScreenState extends State<LoginScreen> {
     final double imageHeight = size.height * 0.38;
     final double horizontalPadding = size.width * 0.075;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8F8),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: size.height -
-                  MediaQuery.of(context).padding.top -
-                  MediaQuery.of(context).padding.bottom,
-            ),
-            child: Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: imageHeight,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
-                    ),
-                    child: Image.asset(
-                      'lib/assets/images/GettyImages-1315607788 3.png',
-                      width: double.infinity,
-                      height: imageHeight,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                SizedBox(height: size.height * 0.025),
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: size.height * 0.02,
+    return BlocProvider(
+      create: (context) => LoginCubit(),
+      child: BlocConsumer<LoginCubit, LoginState>(
+        listener: (context, state) {
+          if (state is LoginSuccessState) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HomeScreen1(username: state.username),
+              ),
+            );
+          } else if (state is LoginErrorState) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMsg),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final cubit = context.read<LoginCubit>();
+          final isLoading = state is LoginLoadingState;
+
+          return Scaffold(
+            backgroundColor: const Color(0xFFF7F8F8),
+            body: SafeArea(
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: size.height -
+                        MediaQuery.of(context).padding.top -
+                        MediaQuery.of(context).padding.bottom,
                   ),
                   child: Column(
                     children: [
-                      _buildLoginTextField(
-                        controller: usernameController,
-                        hintText: 'Username',
-                        prefixIconPath: 'lib/assets/images/Profile - Iconly Pro.svg',
-                      ),
-                      SizedBox(height: size.height * 0.025),
-                      _buildLoginTextField(
-                        controller: passwordController,
-                        hintText: 'Password',
-                        prefixIconPath: 'lib/assets/images/Password - Iconly Pro.svg',
-                        obscureText: obscurePassword,
-                        suffixIcon: LockButton(
-                          isLocked: obscurePassword,
-                          onPressed: () {
-                            setState(() {
-                              obscurePassword = !obscurePassword;
-                            });
-                          },
-                        ),
-                      ),
-                      SizedBox(height: size.height * 0.04),
+                    
                       SizedBox(
                         width: double.infinity,
-                        height: 45,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF119B52),
-                            foregroundColor: Colors.white,
-                            elevation: 6,
-                            shadowColor: const Color(0x66119B52),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(11),
-                            ),
-                            padding: EdgeInsets.zero,
+                        height: imageHeight,
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(20),
+                            bottomRight: Radius.circular(20),
                           ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
+                          child: Image.asset(
+                            'lib/assets/images/GettyImages-1315607788 3.png',
+                            width: double.infinity,
+                            height: imageHeight,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                      SizedBox(height: size.height * 0.02),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Don't Have An Account?",
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF5F5D68),
+
+                      SizedBox(height: size.height * 0.025),
+
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                          vertical: size.height * 0.02,
+                        ),
+                        child: Column(
+                          children: [
+                           
+                            _buildLoginTextField(
+                              controller: cubit.username,
+                              hintText: 'Username',
+                              prefixIconPath:
+                                  'lib/assets/images/Profile - Iconly Pro.svg',
                             ),
-                          ),
-                          const SizedBox(width: 18),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const RegisterScreen(),
-                                ),
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: const Text(
-                              'Register',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.black,
+
+                            SizedBox(height: size.height * 0.025),
+
+                         
+                            _buildLoginTextField(
+                              controller: cubit.password,
+                              hintText: 'Password',
+                              prefixIconPath:
+                                  'lib/assets/images/Password - Iconly Pro.svg',
+                              obscureText: cubit.isPasswordSecure,
+                              suffixIcon: LockButton(
+                                isLocked: cubit.isPasswordSecure,
+                                onPressed: () {
+                                  cubit.changePassSecure();
+                                },
                               ),
                             ),
-                          ),
-                        ],
+
+                            SizedBox(height: size.height * 0.04),
+
+                         
+                            SizedBox(
+                              width: double.infinity,
+                              height: 45,
+                              child: ElevatedButton(
+                                onPressed: isLoading ? null : cubit.login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF119B52),
+                                  foregroundColor: Colors.white,
+                                  elevation: 6,
+                                  shadowColor: const Color(0x66119B52),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(11),
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                ),
+                                child: isLoading
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Login',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                              ),
+                            ),
+
+                            SizedBox(height: size.height * 0.02),
+
+                           
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  "Don't Have An Account?",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF5F5D68),
+                                  ),
+                                ),
+                                const SizedBox(width: 18),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const RegisterScreen(),
+                                      ),
+                                    );
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Register',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
+ 
   Widget _buildLoginTextField({
     required TextEditingController controller,
     required String hintText,
@@ -254,9 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
           suffixIcon: SizedBox(
             width: 40,
             height: 45,
-            child: Center(
-              child: suffixIcon,
-            ),
+            child: Center(child: suffixIcon),
           ),
           suffixIconConstraints: const BoxConstraints(
             minWidth: 40,

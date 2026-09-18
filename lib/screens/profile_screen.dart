@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/user_data.dart';
-import '../repo/auth_repo.dart';
 import '../repo/user_repo.dart';
 import 'update_profile_screen.dart';
 import 'change_password_screen.dart';
@@ -34,7 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _fetchUserData();
   }
 
-  // ✅ GET /get_user_data
+ 
   Future<void> _fetchUserData() async {
     setState(() => _isLoading = true);
 
@@ -53,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ✅ تحديث الاسم بعد التعديل
+ 
   Future<void> _openUpdateProfile() async {
     final newUsername = await Navigator.push<String>(
       context,
@@ -67,41 +66,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (newUsername != null && newUsername.isNotEmpty) {
       setState(() => _currentUsername = newUsername);
     }
-  }
-
-  // ✅ Logout
-  Future<void> _logout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    await AuthRepo().logout();
-
-    if (!mounted) return;
-
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/',
-      (route) => false,
-    );
   }
 
   @override
@@ -124,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   SizedBox(height: size.height * 0.022),
 
-                  // ============ Header ============
+                  
                   Row(
                     children: [
                       ClipOval(
@@ -171,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   SizedBox(height: size.height * 0.055),
 
-                  // ============ Profile ============
+                
                   _profileMenuItem(
                     context: context,
                     iconPath: 'lib/assets/images/Profile - Iconly Pro.svg',
@@ -181,7 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   SizedBox(height: size.height * 0.030),
 
-                  // ============ Change Password ============
+               
                   _profileMenuItem(
                     context: context,
                     iconPath: 'lib/assets/images/Lock - Iconly Pro.png',
@@ -198,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   SizedBox(height: size.height * 0.030),
 
-                  // ============ Settings ============
+                
                   _profileMenuItem(
                     context: context,
                     iconPath: 'lib/assets/images/Setting - Iconly Pro.png',
@@ -211,16 +175,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                     },
-                  ),
-
-                  SizedBox(height: size.height * 0.030),
-
-                  // ============ Logout ============
-                  _profileMenuItem(
-                    context: context,
-                    iconPath: 'lib/assets/images/Lock - Iconly Pro.png',
-                    title: 'Logout',
-                    onTap: _logout,
                   ),
 
                   SizedBox(height: size.height * 0.030),

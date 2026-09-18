@@ -26,9 +26,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   final TaskRepo _taskRepo = TaskRepo();
   bool isLoading = false;
 
-  // ✅ مهمة من الـ API بس لو id بين 1 و 999
-  // المهام الجديدة بتاخد id من 1000
-  // المهام الأساسية بتاخد id سالب
+ 
   bool get _isApiTask =>
       widget.task.id != null &&
       widget.task.id! > 0 &&
@@ -53,19 +51,16 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     super.dispose();
   }
 
-  // ============================================
-  // Update Task
-  // PUT /tasks/{id}
-  // ============================================
+  
   Future<void> updateTask() async {
-    // 1. التحقق من الحقول
+  
     if (titleController.text.trim().isEmpty ||
         descriptionController.text.trim().isEmpty) {
       _showError('Please fill all fields');
       return;
     }
 
-    // ✅ مهمة محلية (id سالب أو أكبر من 1000)
+  
     if (!_isApiTask) {
       final updatedTask = TaskData(
         id: widget.task.id,
@@ -78,7 +73,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         imagePath: widget.task.imagePath,
       );
 
-      // ✅ SnackBar
+     
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Task updated successfully'),
@@ -91,7 +86,6 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       return;
     }
 
-    // ✅ مهمة API
     setState(() => isLoading = true);
 
     final result = await _taskRepo.updateTask(
@@ -104,10 +98,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     setState(() => isLoading = false);
 
     if (result['success'] == true) {
-      // ✅ SnackBar من الـ API
+     
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message']), // "Task updated successfully"
+          content: Text(result['message']), 
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         ),
@@ -130,12 +124,9 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     }
   }
 
-  // ============================================
-  // Delete Task
-  // DELETE /tasks/{id}
-  // ============================================
+
   Future<void> deleteTask() async {
-    // 1. Dialog تأكيد
+  
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -159,9 +150,9 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
     if (confirmed != true) return;
 
-    // ✅ مهمة محلية (id سالب أو أكبر من 1000)
+    
     if (!_isApiTask) {
-      // ✅ SnackBar
+    
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Task deleted successfully'),
@@ -174,7 +165,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       return;
     }
 
-    // ✅ مهمة API
+ 
     setState(() => isLoading = true);
 
     final result = await _taskRepo.deleteTask(id: widget.task.id!);
@@ -183,10 +174,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     setState(() => isLoading = false);
 
     if (result['success'] == true) {
-      // ✅ SnackBar من الـ API
+     
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message']), // "Task deleted successfully"
+          content: Text(result['message']), 
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         ),
@@ -197,9 +188,6 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     }
   }
 
-  // ============================================
-  // Mark as Done
-  // ============================================
   void markAsDone() {
     if (titleController.text.trim().isEmpty ||
         descriptionController.text.trim().isEmpty) {
@@ -296,7 +284,6 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
               children: [
                 const SizedBox(height: 16),
 
-                // ============ Header ============
                 Row(
                   children: [
                     IconButton(
@@ -356,7 +343,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
                 const SizedBox(height: 22),
 
-                // ============ Status + Avatar ============
+      
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -415,7 +402,6 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
                 const SizedBox(height: 17),
 
-                // ============ Group ============
                 GestureDetector(
                   onTap: _showGroupPicker,
                   child: Container(
@@ -451,7 +437,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
                 const SizedBox(height: 16),
 
-                // ============ Title ============
+            
                 Container(
                   width: double.infinity,
                   height: 54,
@@ -480,7 +466,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
                 const SizedBox(height: 16),
 
-                // ============ Description ============
+             
                 Container(
                   width: double.infinity,
                   height: 125,
@@ -510,7 +496,6 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
                 const SizedBox(height: 16),
 
-                // ============ Date + Time ============
                 GestureDetector(
                   onTap: pickEditDateAndTime,
                   child: Container(
@@ -551,7 +536,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
                 const SizedBox(height: 68),
 
-                // ============ Mark as Done ============
+             
                 SizedBox(
                   width: double.infinity,
                   height: 44,
@@ -578,7 +563,6 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
                 const SizedBox(height: 17),
 
-                // ============ Update ============
                 SizedBox(
                   width: double.infinity,
                   height: 44,

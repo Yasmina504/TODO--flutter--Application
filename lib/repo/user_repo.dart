@@ -3,10 +3,7 @@ import '../models/user_data.dart';
 import '../services/api_service.dart';
 
 class UserRepo {
-  // ============================================
-  // 1. Get User Data
-  // GET /get_user_data
-  // ============================================
+
   Future<Map<String, dynamic>> getUserData() async {
     try {
       final response = await ApiService.dio.get('get_user_data');
@@ -31,10 +28,7 @@ class UserRepo {
     }
   }
 
-  // ============================================
-  // 2. Update Profile
-  // PUT /update_profile
-  // ============================================
+ 
   Future<Map<String, dynamic>> updateProfile({
     required String username,
   }) async {
@@ -65,10 +59,7 @@ class UserRepo {
     }
   }
 
-  // ============================================
-  // 3. Change Password
-  // POST /change_password
-  // ============================================
+
   Future<Map<String, dynamic>> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -103,9 +94,7 @@ class UserRepo {
     }
   }
 
-  // ============================================
-  // Error Handler
-  // ============================================
+
   String _handleError(DioError e) {
     if (e.response != null && e.response?.data != null) {
       final data = e.response?.data;
